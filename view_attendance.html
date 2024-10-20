@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Attendance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            margin-right: 10px;
+        }
+        select, input[type="date"] {
+            padding: 5px;
+            margin-right: 10px;
+        }
+        .select2-container {
+            width: 200px !important;  /* Make sure the dropdown width fits */
+        }
+    </style>
+
+    <!-- Add Select2 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+
+</head>
+<body>
+    <h1>Select Criteria to View Attendance</h1>
+    <form method="POST">
+        <div class="form-group">
+            <label for="event_id">Select Event IDs (Multiselect):</label>
+            <select name="event_ids" id="event_id" multiple class="select2">
+                {% for event in events %}
+                    <option value="{{ event[0] }}">{{ event[0] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="event_name">Select Event Names (Multiselect):</label>
+            <select name="event_names" id="event_name" multiple class="select2">
+                {% for event in events %}
+                    <option value="{{ event[1] }}">{{ event[1] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="from_date">From Date:</label>
+            <input type="date" id="from_date" name="from_date">
+
+            <label for="to_date">To Date:</label>
+            <input type="date" id="to_date" name="to_date">
+        </div>
+
+        <button type="submit" name="view_data" class="button">View Data</button>
+        <button type="submit" name="download_excel" class="button">Download Excel</button>
+    </form>
+
+    {% if data %}
+    <table>
+        <thead>
+            <tr>
+                <th>Employee ID</th>
+                <th>Employee Name</th>
+                <th>Date and Time</th>
+                <th>Event Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                <td>{{ row[0] }}</td>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ row[3] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <!-- Add Select2 JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+    <script>
+        // Enable Select2 on multiselect dropdowns
+        $(document).ready(function() {
+            $('.select2').select2();
+        });
+    </script>
+
+</body>
+</html>

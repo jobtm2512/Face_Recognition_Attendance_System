@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 50px;
+      }
+
+      #video {
+        width: 640px;
+        height: 480px;
+        border: 1px solid #ddd;
+      }
+
+      #message {
+        margin-top: 20px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        font-size: 16px;
+        color: #fff;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        text-decoration: none;
+        cursor: pointer;
+        margin: 10px;
+      }
+
+      .button:hover {
+        background-color: #0056b3;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+
+      th {
+        background-color: #f4f4f4;
+      }
+
+      td {
+        background-color: #fafafa;
+      }
+
+      .scrollable-table {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 20px;
+      }
+
+      .modal {
+        display: none;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 1;
+        /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%;
+        /* Full width */
+        height: 100%;
+        /* Full height */
+        background-color: rgba(0, 0, 0, 0.5);
+        /* Black background with opacity */
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        /* Could be more or less, depending on screen size */
+        max-width: 400px;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Attendance Scanner</h1>
+    <!-- Modal for Event Selection -->
+    <div id="eventModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Select Event</h2>
+        <label for="event">Select Event:</label>
+        <select id="event"> {% for event in events %} <option value="{{ event[0] }}">{{ event[0] }} - {{ event[1] }}</option> {% endfor %} </select>
+        <button id="proceedButton">Proceed</button>
+      </div>
+    </div>
+    <!-- Camera and Attendance Table -->
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <!-- Hidden initially -->
+    <div id="message"></div>
+    <div class="scrollable-table">
+      <table id="attendanceTable">
+        <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Date & Time</th>
+            <th>Event</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Attendance records will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+    <a href="{{ url_for('home') }}" class="button">Back to Home</a>
+    <script>
+      const video = document.getElementById('video');
+      const messageDiv = document.getElementById('message');
+      const tableBody = document.querySelector('#attendanceTable tbody');
+      const eventDropdown = document.getElementById('event');
+      const eventModal = document.getElementById('eventModal');
+      const proceedButton = document.getElementById('proceedButton');
+      const closeButton = document.querySelector('.close');
+      // Show the modal when "Already Registered" is clicked
+      window.onload = function() {
+        eventModal.style.display = 'block'; // Show the modal on load for demonstration
+      };
+      // Close the modal
+      closeButton.onclick = function() {
+        eventModal.style.display = 'none';
+      };
+      // Proceed after event selection
+      proceedButton.onclick = function() {
+        eventModal.style.display = 'none'; // Hide the modal
+        video.style.display = 'block'; // Show the camera
+        // Access webcam
+        navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user"
+          }
+        }).then(stream => {
+          video.srcObject = stream;
+          setInterval(captureAndSend, 2000); // Adjust interval as needed
+        }).catch(err => {
+          console.error('Error accessing the camera: ', err);
+          messageDiv.textContent = 'Error accessing camera. Please try again.';
+        });
+      };
+      // Function to capture and send frame to server
+      function captureAndSend() {
+        const selectedEventId = eventDropdown.value; // Get selected event ID
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
+        fetch('/log_attendance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: imageDataUrl,
+            event_id: selectedEventId
+          }), // Send event ID with image data
+        }).then(response => response.json()).then(data => {
+          if (data.success) {
+            // Add new attendance record to the table
+            const now = new Date();
+            const dateTime = now.toLocaleString();
+            const row = document.createElement('tr');
+            const empIdCell = document.createElement('td');
+            const dateTimeCell = document.createElement('td');
+            const eventCell = document.createElement('td');
+            empIdCell.textContent = data.emp_id;
+            dateTimeCell.textContent = dateTime;
+            eventCell.textContent = selectedEventId;
+            row.appendChild(empIdCell);
+            row.appendChild(dateTimeCell);
+            row.appendChild(eventCell);
+            tableBody.insertBefore(row, tableBody.firstChild);
+            if (tableBody.children.length > 5) {
+              tableBody.removeChild(tableBody.lastChild);
+            }
+            messageDiv.textContent = `Attendance marked for employee ID: ${data.emp_id}`;
+            setTimeout(() => messageDiv.textContent = '', 1500);
+          } else {
+            messageDiv.textContent = data.message;
+            setTimeout(() => messageDiv.textContent = '', 1500);
+          }
+        }).catch(error => {
+          console.error('Error:', error);
+          messageDiv.textContent = 'An error occurred. Please try again.';
+          setTimeout(() => messageDiv.textContent = '', 1500);
+        });
+      }
+    </script>
+  </body>
+</html>

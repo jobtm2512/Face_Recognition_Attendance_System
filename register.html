@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 16px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-button:hover {
+            text-decoration: underline;
+        }
+        form {
+            margin-top: 30px;
+            text-align: left;
+            display: inline-block;
+        }
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #capturedImage {
+            display: none;
+            margin-top: 10px;
+        }
+        #recaptureButton {
+            display: none;
+            margin-top: 10px;
+        }
+        #camera {
+            margin-top: 20px;
+        }
+        #countdown {
+            display: none;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('home') }}" class="back-button">Back</a>
+    <h1>New Registration</h1>
+    <form id="registrationForm" action="{{ url_for('register_new_user') }}" method="post">
+        <label for="emp_id">Employee ID:</label>
+        <input type="text" id="emp_id" name="emp_id" required>
+
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="designation">Designation:</label>
+        <input type="text" id="designation" name="designation" required>
+
+        <label for="deptname">Department Name:</label>
+        <input type="text" id="deptname" name="deptname" required>
+
+        <label for="join_date">Join Date:</label>
+        <input type="date" id="join_date" name="join_date" required>
+
+        <div id="camera">
+            <label for="video">Capture Video:</label>
+            <video id="video" width="320" height="240" autoplay></video>
+            <button type="button" id="startRecording">Start Recording</button>
+            <div id="countdown"></div>
+            <input type="hidden" id="video_data" name="video_data">
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const video = document.getElementById('video');
+        const startRecordingButton = document.getElementById('startRecording');
+        const videoDataInput = document.getElementById('video_data');
+        const form = document.getElementById('registrationForm');
+        const countdownElement = document.getElementById('countdown');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let countdownInterval;
+
+        // Access webcam
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user' }
+                })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => {
+                    console.error('Error accessing webcam: ', err);
+                });
+        }
+
+        startCamera();
+
+        // Start recording with countdown
+        startRecordingButton.addEventListener('click', () => {
+            startRecordingButton.disabled = true;
+            countdownElement.style.display = 'block';
+            let seconds = 5;
+
+            countdownInterval = setInterval(() => {
+                countdownElement.textContent = seconds;
+                seconds--;
+
+                if (seconds < 0) {
+                    clearInterval(countdownInterval);
+                    countdownElement.style.display = 'none';
+                    stopRecording();
+                }
+            }, 1000);
+
+            // Start recording after a short delay
+            setTimeout(() => {
+                mediaRecorder = new MediaRecorder(video.srcObject);
+                mediaRecorder.ondataavailable = (event) => {
+                    recordedChunks.push(event.data);
+                };
+                mediaRecorder.start();
+            }, 500);
+        });
+
+        // Stop recording
+        function stopRecording() {
+            mediaRecorder.stop();
+            startRecordingButton.disabled = false;
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const reader = new FileReader();
+
+                reader.onloadend = () => {
+                    videoDataInput.value = reader.result;
+                };
+                reader.readAsDataURL(blob);
+            };
+        }
+
+        // Prevent form submission if video is not recorded
+        form.addEventListener('submit', function(event) {
+            if (!videoDataInput.value) {
+                event.preventDefault();
+                alert('Please record a video before submitting.');
+            }
+        });
+    </script>
+</body>
+</html>

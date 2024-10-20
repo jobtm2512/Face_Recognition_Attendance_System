@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        #logo {
+            max-width: 100%;
+            height: auto;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <img id="logo" src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo">
+    <div class="button-container">
+        <a href="{{ url_for('register_new_user') }}" class="button">Register New User</a>
+        <a href="{{ url_for('log_attendance') }}" class="button">Already Registered</a>
+        <a href="{{ url_for('select_event') }}" class="button">Download Event PDF</a> 
+    </div>
+</body>
+</html>
